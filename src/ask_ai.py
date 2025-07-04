@@ -1,9 +1,9 @@
 import os
 from dotenv import load_dotenv
+from langchain_community.chat_models import ChatOpenAI
 from pydantic import SecretStr
 from langchain.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_openai import ChatOpenAI
 from generate_vector_store import VECTOR_STORE_PATH
 
 load_dotenv()
@@ -23,7 +23,7 @@ retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
 llm = ChatOpenAI(
     model="deepseek-chat",
     base_url="https://api.deepseek.com/v1",
-    api_key=SecretStr(api_key),
+    api_key=api_key,
     temperature=0.7,
     streaming=True  # 开启流式模式
 )
