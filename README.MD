@@ -6,7 +6,7 @@
 ![img_1.png](resources/img_1.png)
 
 2、创建 .env 文件，写入 Deepseek 密钥（api key）例：
-![img_1.png](resources/img_1.png)
+![img_2.png](resources/img_2.png)
 
 3、安装依赖： pip install -r requirements.txt
 
