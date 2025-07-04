@@ -3,8 +3,10 @@
 # 使用流程
 
 1、配置本地知识库所在目录
+![img_1.png](resources/img_1.png)
 
-2、创建 .env 文件，写入 Deepseek 密钥（api key）
+2、创建 .env 文件，写入 Deepseek 密钥（api key）例：
+![img.png](resources/img.png)
 
 3、安装依赖： pip install -r requirements.txt
 

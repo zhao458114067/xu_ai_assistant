@@ -7,7 +7,7 @@ from langchain.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 
 DATA_PATH = "D:\idea_workspace\zx-rich\src"
-VECTOR_STORE_PATH = "vector_store"
+VECTOR_STORE_PATH = "../vector_store"
 
 def load_documents(path: str):
     documents = []
