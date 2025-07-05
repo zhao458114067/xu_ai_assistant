@@ -12,7 +12,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from src.loader.doc_textract_loader import DocTextractLoader
 from src.loader.ppt_text_loader import PPTXTextLoader
 
-VECTOR_STORE_PATH = "../vector_store"
+VECTOR_STORE_PATH = "vector_store"
 DATA_PATH = [
     "D:\\vscode_workspace",
     # "D:\\vscode_workspace\\octopus-nodejs-browser-crawler",
@@ -21,8 +21,8 @@ DATA_PATH = [
     "D:\\个人文档",
 ]
 EXCLUDE_DIRS = {"__pycache__", "target", "logs", "log", "node_modules", "lib", ".git", ".github", "build", "dist"}
-EXCLUDE_FILES = {".7z", ".zip", "crt", "drawio", ".tar", ".gz", ".so", ".tgz", "~", "png", "jpg", ".key", ".node",
-                 "git", "ttf", ".gif", ".rar"}
+INCLUDE_FILES_SOURCES = [".py", ".java", ".vue", ".js", ".ts", ".tsx", ".cjs", ".mjs", ".json", ".ini", ".sh",
+                         "dockerfile", ".properties", ".doc", ".docx", ".pdf", ".ppt", ".pptx"]
 
 
 def get_loader(filepath: str):
@@ -32,8 +32,8 @@ def get_loader(filepath: str):
         return TextLoader(filepath, encoding="utf-8")
     # 源代码类
     elif any(keyword in filename for keyword in
-             [".py", ".java", ".vue", ".js", ".ts", ".tsx", "cjs", "mjs", ".cpp", ".go", ".html", ".xml", ".json",
-              "ini", ".sh", "dockerfile", ".properties"]):
+             [".py", ".java", ".vue", ".js", ".ts", ".tsx", ".cjs", ".mjs", ".json", ".ini", ".sh",
+              "dockerfile", ".properties"]):
         return TextLoader(filepath, encoding="utf-8")
     if any(keyword in filename for keyword in [".docx"]):
         return Docx2txtLoader(filepath)
@@ -60,9 +60,8 @@ def load_documents(path_list: [str]):
             for file in files:
                 filepath = os.path.join(root, file)
                 filename = os.path.basename(filepath).lower()
-                if any(keyword in filename for keyword in EXCLUDE_FILES):
-                    continue
-                file_list.append(filepath)
+                if any(keyword in filename for keyword in INCLUDE_FILES_SOURCES):
+                    file_list.append(filepath)
 
     print(f"共发现 {len(file_list)} 个文件，开始加载…")
 
