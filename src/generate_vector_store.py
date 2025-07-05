@@ -1,12 +1,13 @@
 import os
+from concurrent.futures import ThreadPoolExecutor
+
 import nltk
 import torch
 from dotenv import load_dotenv
-from langchain_community.document_loaders import TextLoader, UnstructuredFileLoader, Docx2txtLoader, PyPDFLoader, \
-    UnstructuredPowerPointLoader
+from langchain_community.document_loaders import TextLoader, Docx2txtLoader, PyPDFLoader
+from tqdm import tqdm
 from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
-from tqdm import tqdm
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 from src.loader.doc_textract_loader import DocTextractLoader
@@ -90,8 +91,14 @@ def main():
         model_kwargs={"device": device}
     )
 
-    # 生成嵌入
-    vectorstore = FAISS.from_documents(chunks, embeddings)
+    texts = [doc.page_content for doc in chunks]
+
+    # 生成嵌入向量
+    print("正在生成嵌入向量...")
+    with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+        vectors = list(tqdm(executor.map(embeddings.embed_query, texts), total=len(texts)))
+    text_vector_pairs = list(zip(texts, vectors))
+    vectorstore = FAISS.from_embeddings(text_vector_pairs, embeddings)
 
     print("正在保存向量数据库...")
     vectorstore.save_local(VECTOR_STORE_PATH)
