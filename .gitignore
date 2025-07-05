@@ -33,4 +33,4 @@ build/
 .vscode/
 /logs/
 .env
-/vector_store
+/vector_store1

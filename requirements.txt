@@ -4,4 +4,6 @@ langchain-openai
 langchain-community
 langchain-huggingface
 sentence-transformers
-unstructured[all]
+unstructured[local-inference,pdf,ppt,all-docs]
+textract
+python-magic-bin
