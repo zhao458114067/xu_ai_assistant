@@ -11,17 +11,18 @@ VECTOR_STORE_PATH = "../vector_store"
 
 EXCLUDE_DIRS = {".git", ".idea", "__pycache__", ".vscode"}
 
-def load_documents(path: str):
+def load_documents(pathList: [str]):
     documents = []
     file_list = []
 
-    for root, dirs, files in os.walk(path):
-        dirs[:] = [d for d in dirs if d not in EXCLUDE_DIRS and not d.startswith('.')]
-        for file in files:
-            if file.startswith('.'):
-                continue
-            filepath = os.path.join(root, file)
-            file_list.append(filepath)
+    for path in pathList:
+        for root, dirs, files in os.walk(path):
+            dirs[:] = [d for d in dirs if d not in EXCLUDE_DIRS and not d.startswith('.')]
+            for file in files:
+                if file.startswith('.'):
+                    continue
+                filepath = os.path.join(root, file)
+                file_list.append(filepath)
 
     print(f"共发现 {len(file_list)} 个文件，开始加载…")
 
