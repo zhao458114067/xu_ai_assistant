@@ -87,10 +87,7 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     embeddings = HuggingFaceEmbeddings(
         model_name="intfloat/multilingual-e5-large",
-        model_kwargs={
-            "device": device,
-            "output_loading_info": True
-        }
+        model_kwargs={"device": device}
     )
 
     # 生成嵌入
