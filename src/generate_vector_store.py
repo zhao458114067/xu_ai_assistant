@@ -6,16 +6,18 @@ from langchain.document_loaders import UnstructuredFileLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import FAISS
 
-DATA_PATH = "D:/idea_workspace/zx-rich/src"
 VECTOR_STORE_PATH = "../vector_store"
-
+DATA_PATH = [
+    "D:/idea_workspace/zx-rich/src",
+]
 EXCLUDE_DIRS = {".git", ".idea", "__pycache__", ".vscode"}
 
-def load_documents(pathList: [str]):
+
+def load_documents(path_list: [str]):
     documents = []
     file_list = []
 
-    for path in pathList:
+    for path in path_list:
         for root, dirs, files in os.walk(path):
             dirs[:] = [d for d in dirs if d not in EXCLUDE_DIRS and not d.startswith('.')]
             for file in files:
@@ -34,6 +36,7 @@ def load_documents(pathList: [str]):
             print(f"⚠️ 跳过 {filepath}（原因：{e}）")
 
     return documents
+
 
 def main():
     if os.path.exists(VECTOR_STORE_PATH):
@@ -64,6 +67,7 @@ def main():
     print("正在保存向量数据库...")
     vectorstore.save_local(VECTOR_STORE_PATH)
     print("向量库已生成，你现在可以开始提问了")
+
 
 if __name__ == "__main__":
     nltk.download('punkt')
