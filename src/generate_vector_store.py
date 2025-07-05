@@ -1,10 +1,10 @@
 import os
 import nltk
+from langchain_huggingface import HuggingFaceEmbeddings
 from tqdm import tqdm
 from langchain.document_loaders import UnstructuredFileLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import FAISS
-from langchain_community.embeddings import HuggingFaceEmbeddings
 
 DATA_PATH = "D:/idea_workspace/zx-rich/src"
 VECTOR_STORE_PATH = "../vector_store"
@@ -43,7 +43,11 @@ def main():
     documents = load_documents(DATA_PATH)
 
     print("正在切分文本...")
-    splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=100)
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1000,
+        chunk_overlap=150,
+        separators=["\n\n", "\n", ".", "。", "，", ",", " "]
+    )
     chunks = splitter.split_documents(documents)
     print(f"共切分为 {len(chunks)} 个文本块")
 
