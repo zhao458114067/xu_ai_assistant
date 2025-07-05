@@ -1,5 +1,6 @@
 import os
 import nltk
+import torch
 from dotenv import load_dotenv
 from langchain_community.document_loaders import TextLoader, UnstructuredFileLoader, Docx2txtLoader, PyPDFLoader, \
     UnstructuredPowerPointLoader
@@ -21,7 +22,7 @@ DATA_PATH = [
 ]
 EXCLUDE_DIRS = {"__pycache__", "target", "logs", "log", "node_modules", "lib", ".git", ".github", "build", "dist"}
 EXCLUDE_FILES = {".7z", ".zip", "crt", "drawio", ".tar", ".gz", ".so", ".tgz", "~", "png", "jpg", ".key", ".node",
-                 "git", "ttf", ".gif"}
+                 "git", "ttf", ".gif", ".rar"}
 
 
 def get_loader(filepath: str):
@@ -93,16 +94,14 @@ def main():
     print(f"共切分为 {len(chunks)} 个文本块")
 
     print("正在创建向量库（使用 bge-small-zh）...")
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     embeddings = HuggingFaceEmbeddings(
         model_name="BAAI/bge-small-zh",
-        model_kwargs={"device": "cpu"}
+        model_kwargs={"device": device}
     )
 
     # 生成嵌入
-    vectors = []
-    for chunk in tqdm(chunks, desc="生成嵌入"):
-        vectors.append(chunk)
-    vectorstore = FAISS.from_documents(vectors, embeddings)
+    vectorstore = FAISS.from_documents(chunks, embeddings)
 
     print("正在保存向量数据库...")
     vectorstore.save_local(VECTOR_STORE_PATH)

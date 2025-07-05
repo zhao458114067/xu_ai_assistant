@@ -2,14 +2,19 @@
 
 # 使用流程
 
-1、配置本地知识库所在目录
+## 1、配置本地知识库所在目录
 ![img_1.png](resources/img_1.png)
 
-2、创建 .env 文件，写入 Deepseek 密钥（api key）例：
+## 2、创建 .env 文件，写入 Deepseek 密钥（api key）例：
 ![img_2.png](resources/img_2.png)
 
-3、安装依赖： pip install -r requirements.txt
+## 3、安装依赖（py3.11）：
+pip install -r requirements.txt
 
-4、生成向量知识库：python generate_vector_store.py
+pip install textract
 
-5、启动问答助手：python ask_ai.py
+## 4、生成向量知识库
+python generate_vector_store.py
+
+## 5、启动问答助手
+python ask_ai.py
