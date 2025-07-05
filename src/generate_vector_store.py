@@ -14,40 +14,31 @@ from src.loader.ppt_text_loader import PPTXTextLoader
 
 VECTOR_STORE_PATH = "vector_store"
 DATA_PATH = [
-    "D:\\vscode_workspace",
+    "D:\\supcon_workspace",
     # "D:\\vscode_workspace\\octopus-nodejs-browser-crawler",
-    "D:\\pycharm_workspace\\test1",
-    "D:\\ctrip_workspace",
-    "D:\\个人文档",
+    # "D:\\pycharm_workspace\\test1",
+    # "D:\\ctrip_workspace",
+    # "D:\\个人文档",
 ]
 EXCLUDE_DIRS = {"__pycache__", "target", "logs", "log", "node_modules", "lib", ".git", ".github", "build", "dist"}
 INCLUDE_FILES_SOURCES = [".py", ".java", ".vue", ".js", ".ts", ".tsx", ".cjs", ".mjs", ".json", ".ini", ".sh",
-                         "dockerfile", ".properties", ".doc", ".docx", ".pdf", ".ppt", ".pptx"]
+                         "dockerfile", ".properties", ".doc", ".docx", ".pdf", ".ppt", ".pptx", ".vbs"]
 
 
 def get_loader(filepath: str):
     filename = os.path.basename(filepath).lower()
-    # 文本类文件（编码自动探测）
-    if any(keyword in filename for keyword in [".txt", ".md", ".csv"]):
-        return TextLoader(filepath, encoding="utf-8")
-    # 源代码类
-    elif any(keyword in filename for keyword in
-             [".py", ".java", ".vue", ".js", ".ts", ".tsx", ".cjs", ".mjs", ".json", ".ini", ".sh",
-              "dockerfile", ".properties"]):
-        return TextLoader(filepath, encoding="utf-8")
     if any(keyword in filename for keyword in [".docx"]):
         return Docx2txtLoader(filepath)
-    if any(keyword in filename for keyword in [".doc"]):
+    elif any(keyword in filename for keyword in [".doc"]):
         return DocTextractLoader(filepath)
-    if any(keyword in filename for keyword in [".pdf"]):
+    elif any(keyword in filename for keyword in [".pdf"]):
         return PyPDFLoader(filepath)
-    if any(keyword in filename for keyword in [".ppt", "pptx"]):
+    elif any(keyword in filename for keyword in [".ppt", "pptx"]):
         return PPTXTextLoader(filepath)
+    elif any(keyword in filename for keyword in [".vbs"]):
+        return TextLoader(filepath, encoding="gb18030")
     else:
-        try:
-            return UnstructuredFileLoader(filepath, mode="elements", encoding="utf-8")
-        except Exception:
-            raise ValueError(f"无法处理该文件类型: {filepath}")
+        return TextLoader(filepath, encoding="utf-8")
 
 
 def load_documents(path_list: [str]):
@@ -92,11 +83,14 @@ def main():
     chunks = splitter.split_documents(documents)
     print(f"共切分为 {len(chunks)} 个文本块")
 
-    print("正在创建向量库（使用 bge-small-zh）...")
+    print("正在创建向量库...")
     device = "cuda" if torch.cuda.is_available() else "cpu"
     embeddings = HuggingFaceEmbeddings(
-        model_name="BAAI/bge-small-zh",
-        model_kwargs={"device": device}
+        model_name="intfloat/multilingual-e5-large",
+        model_kwargs={
+            "device": device,
+            "output_loading_info": True
+        }
     )
 
     # 生成嵌入

@@ -1,75 +1,99 @@
 import os
 from dotenv import load_dotenv
 from langchain_community.chat_models import ChatOpenAI
-from pydantic import SecretStr
 from langchain.vectorstores import FAISS
+from langchain_core.messages import HumanMessage, AIMessage
 from langchain_huggingface import HuggingFaceEmbeddings
 from generate_vector_store import VECTOR_STORE_PATH
 
-load_dotenv()
-api_key = os.environ.get("API_KEY")
 
-print("正在加载向量数据库...")
-embeddings = HuggingFaceEmbeddings(
-    model_name="BAAI/bge-small-zh",
-    model_kwargs={"device": "cpu"}
-)
-vectorstore = FAISS.load_local(
-    VECTOR_STORE_PATH, embeddings,
-    allow_dangerous_deserialization=True
-)
-retriever = vectorstore.as_retriever(search_kwargs={"k": 10})
+def start_assistant():
+    print("正在加载向量数据库...")
+    embeddings = HuggingFaceEmbeddings(
+        model_name="intfloat/multilingual-e5-large",
+        model_kwargs={"device": "cpu"}
+    )
+    vectorstore = FAISS.load_local(
+        VECTOR_STORE_PATH, embeddings,
+        allow_dangerous_deserialization=True
+    )
 
-llm = ChatOpenAI(
-    model="deepseek-chat",
-    base_url="https://api.deepseek.com/v1",
-    api_key=api_key,
-    temperature=0.1,
-    streaming=True  # 开启流式模式
-)
+    # 检索其
+    retriever = vectorstore.as_retriever(
+        search_type="mmr",
+        search_kwargs={
+            "k": 50,
+            "fetch_k": 100,
+            "lambda_mult": 0.7
+        }
+    )
 
-print("AI 助手已启动，输入你的问题（输入 exit 退出）：\n")
+    # 大模型
+    llm = ChatOpenAI(
+        model="deepseek-chat",
+        base_url="https://api.deepseek.com/v1",
+        api_key=os.environ.get("API_KEY"),
+        temperature=0.9,
+        streaming=True  # 开启流式模式
+    )
 
-history = []
+    print("AI 助手已启动，输入你的问题（输入 exit 退出）：\n")
+    question_and_answer(retriever, llm)
 
-while True:
-    try:
-        query = input("你问：")
-        if query.strip().lower() in ["exit", "quit", "q"]:
+
+def question_and_answer(retriever, llm):
+    history = []
+
+    while True:
+        try:
+            query = input("你问：")
+            if query.strip().lower() in ["exit", "quit", "q"]:
+                break
+            # 检索文档
+            doc_contents = retrieve_contents(query, retriever)
+
+            # 构造历史对话,最多保留最近 5 轮
+            messages = []
+            for q, a in history[-5:]:
+                messages.append(HumanMessage(content=q))
+                messages.append(AIMessage(content=a))
+
+            rewrite_prompt = (f"""请你基于上下文，把这个问题补充成更完整、更有助于langchain向量库检索的形式
+                              \n\n用户问题：{query}
+                                """)
+            rewrite_prompt = llm.invoke(messages + [HumanMessage(content=rewrite_prompt)]).content.strip()
+
+            doc_contents = retrieve_contents(rewrite_prompt, retriever)
+
+            # 构造完整 Prompt
+            full_prompt = f"""请根据以下文档回答问题。文档以中文为主，请勿编造。”。        
+            \n\n资料：{doc_contents}            
+            \n\n用户问题：{query}
+            """
+
+            messages.append(HumanMessage(content=full_prompt))
+
+            # 输出答案（流式打印）
+            print("回答：", end="", flush=True)
+            answer = ""
+            for chunk in llm.stream(messages):
+                print(chunk.content, end="", flush=True)
+                answer += chunk.content
+            print("\n")
+
+            # 存入历史
+            history.append((query, answer))
+
+        except KeyboardInterrupt:
             break
 
-        docs = retriever.invoke(query)
 
-        # 拼接上下文文档
-        context = "\n\n".join([doc.page_content for doc in docs])
+def retrieve_contents(query, retriever):
+    docs = retriever.invoke(query)
+    context = "\n\n".join([doc.page_content for doc in docs])
+    return context
 
-        # 构造历史对话,最多保留最近 10 轮
-        history_prompt = ""
-        for i, (q, a) in enumerate(history[-10:]):
-            history_prompt += f"用户：{q}\n助手：{a}\n"
 
-        # 构造完整 Prompt
-        full_prompt = f"""你是一个知识问答助手，请根据以下文档内容和上下文对话回答用户的问题。
-                        已知文档：
-                        {context}
-                
-                        历史对话：
-                        {history_prompt}
-                
-                        当前问题：
-                        用户：{query}
-                        助手："""
-
-        # 输出答案（流式打印）
-        print("回答：", end="", flush=True)
-        answer = ""
-        for chunk in llm.stream(full_prompt):
-            print(chunk.content, end="", flush=True)
-            answer += chunk.content
-        print("\n")
-
-        # 存入历史
-        history.append((query, answer))
-
-    except KeyboardInterrupt:
-        break
+if __name__ == '__main__':
+    load_dotenv()
+    start_assistant()
