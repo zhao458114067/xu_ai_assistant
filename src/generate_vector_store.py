@@ -15,23 +15,7 @@ from src.loader.ppt_text_loader import PPTXTextLoader
 
 VECTOR_STORE_PATH = "../vector_store"
 DATA_PATH = [
-    # "D:\\supcon_workspace",
-    "D:\\vscode_workspace\\octopus-nodejs-browser-crawler\\node-crawler-core\\package",
-    "D:\\vscode_workspace\\octopus-nodejs-browser-crawler\\octopus-browser-crawler\\src",
-    "D:\\pycharm_workspace\\test1",
-    "D:\\ctrip_workspace\\boxexecutor",
-    "D:\\ctrip_workspace\\octopus-account-distribution",
-    "D:\\ctrip_workspace\\octopus-common",
-    "D:\\ctrip_workspace\\octopus-commons",
-    "D:\\ctrip_workspace\\octopus-core-server",
-    "D:\\ctrip_workspace\\octopus-crawler-java",
-    "D:\\ctrip_workspace\\octopus-hotel",
-    "D:\\ctrip_workspace\\octopus-vacation",
-    "D:\\ctrip_workspace\\octopus-market",
-    "D:\\ctrip_workspace\\octopus-task-builder",
-    "D:\\ctrip_workspace\\octopus-portal-new",
-    "D:\\个人文档\\设计阶段\\酒店爬虫执行流程",
-    "D:\\个人文档\\已发布\\终端容器化\\汇报",
+    "D:\\pycharm_workspace\\octopus_vector_repo",
 ]
 EXCLUDE_DIRS = {"__pycache__", "target", "logs", "log", "node_modules", "lib", ".git", ".github", "build", "dist"}
 INCLUDE_FILES_SOURCES = [".py", ".java", ".vue", ".js", ".ts", ".tsx", ".cjs", ".mjs", ".json", ".ini", ".sh",
@@ -109,6 +93,17 @@ def main():
         vectors = list(tqdm(executor.map(embeddings.embed_query, texts), total=len(texts)))
     text_vector_pairs = list(zip(texts, vectors))
     vectorstore = FAISS.from_embeddings(text_vector_pairs, embeddings)
+
+    # batch_size = 64
+    # vectors = []
+    #
+    # for i in tqdm(range(0, len(texts), batch_size), desc=f"Embedding with {device}"):
+    #     batch = texts[i:i + batch_size]
+    #     batch_vecs = embeddings.embed_documents(batch)
+    #     vectors.extend(batch_vecs)
+    #
+    # text_vector_pairs = list(zip(texts, vectors))
+    # vectorstore = FAISS.from_embeddings(text_vector_pairs, embeddings)
 
     print("正在保存向量数据库...")
     vectorstore.save_local(VECTOR_STORE_PATH)
