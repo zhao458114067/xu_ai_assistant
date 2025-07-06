@@ -22,9 +22,9 @@ def start_assistant():
     retriever = vectorstore.as_retriever(
         search_type="mmr",
         search_kwargs={
-            "k": 50,
-            "fetch_k": 100,
-            "lambda_mult": 0.7
+            "k": 20,
+            "fetch_k": 50,
+            "lambda_mult": 0.8
         }
     )
 
@@ -33,7 +33,7 @@ def start_assistant():
         model="deepseek-chat",
         base_url="https://api.deepseek.com/v1",
         api_key=os.environ.get("API_KEY"),
-        temperature=0.9,
+        temperature=0.1,
         streaming=True  # 开启流式模式
     )
 
@@ -58,8 +58,9 @@ def question_and_answer(retriever, llm):
                 messages.append(HumanMessage(content=q))
                 messages.append(AIMessage(content=a))
 
-            rewrite_prompt = (f"""请你基于上下文，把这个问题补充成更完整、更有助于langchain向量库检索的形式
-                              \n\n用户问题：{query}
+            rewrite_prompt = (f"""请你基于上下文，把这个用户的提问补充为最有助于langchain向量库检索的prompt，只需要返回给我优化后的prompt
+                                \n\n资料：{doc_contents}       
+                                \n\n用户问题：{query}
                                 """)
             rewrite_prompt = llm.invoke(messages + [HumanMessage(content=rewrite_prompt)]).content.strip()
 

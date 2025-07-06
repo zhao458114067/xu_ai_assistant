@@ -13,13 +13,25 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from src.loader.doc_textract_loader import DocTextractLoader
 from src.loader.ppt_text_loader import PPTXTextLoader
 
-VECTOR_STORE_PATH = "vector_store"
+VECTOR_STORE_PATH = "../vector_store"
 DATA_PATH = [
-    "D:\\supcon_workspace",
-    # "D:\\vscode_workspace\\octopus-nodejs-browser-crawler",
-    # "D:\\pycharm_workspace\\test1",
-    # "D:\\ctrip_workspace",
-    # "D:\\个人文档",
+    # "D:\\supcon_workspace",
+    "D:\\vscode_workspace\\octopus-nodejs-browser-crawler\\node-crawler-core\\package",
+    "D:\\vscode_workspace\\octopus-nodejs-browser-crawler\\octopus-browser-crawler\\src",
+    "D:\\pycharm_workspace\\test1",
+    "D:\\ctrip_workspace\\boxexecutor",
+    "D:\\ctrip_workspace\\octopus-account-distribution",
+    "D:\\ctrip_workspace\\octopus-common",
+    "D:\\ctrip_workspace\\octopus-commons",
+    "D:\\ctrip_workspace\\octopus-core-server",
+    "D:\\ctrip_workspace\\octopus-crawler-java",
+    "D:\\ctrip_workspace\\octopus-hotel",
+    "D:\\ctrip_workspace\\octopus-vacation",
+    "D:\\ctrip_workspace\\octopus-market",
+    "D:\\ctrip_workspace\\octopus-task-builder",
+    "D:\\ctrip_workspace\\octopus-portal-new",
+    "D:\\个人文档\\设计阶段\\酒店爬虫执行流程",
+    "D:\\个人文档\\已发布\\终端容器化\\汇报",
 ]
 EXCLUDE_DIRS = {"__pycache__", "target", "logs", "log", "node_modules", "lib", ".git", ".github", "build", "dist"}
 INCLUDE_FILES_SOURCES = [".py", ".java", ".vue", ".js", ".ts", ".tsx", ".cjs", ".mjs", ".json", ".ini", ".sh",
@@ -84,16 +96,14 @@ def main():
     chunks = splitter.split_documents(documents)
     print(f"共切分为 {len(chunks)} 个文本块")
 
-    print("正在创建向量库...")
+    print("正在创建向量模型...")
     device = "cuda" if torch.cuda.is_available() else "cpu"
     embeddings = HuggingFaceEmbeddings(
         model_name="intfloat/multilingual-e5-large",
         model_kwargs={"device": device}
     )
-
     texts = [doc.page_content for doc in chunks]
 
-    # 生成嵌入向量
     print("正在生成嵌入向量...")
     with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
         vectors = list(tqdm(executor.map(embeddings.embed_query, texts), total=len(texts)))
