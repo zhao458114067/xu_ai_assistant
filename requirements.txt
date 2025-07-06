@@ -5,4 +5,4 @@ langchain-community
 langchain-huggingface
 sentence-transformers
 unstructured[local-inference,pdf,ppt,all-docs]
-python-magic-bin
+
