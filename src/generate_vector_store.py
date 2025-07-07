@@ -64,7 +64,7 @@ def load_documents(path_list: [str]):
 
 
 def main():
-    if not os.listdir(VECTOR_STORE_PATH):
+    if len(os.listdir(VECTOR_STORE_PATH)) < 1:
         print(f"检测到向量库已存在于 {VECTOR_STORE_PATH}，无需重复生成")
         return
 
