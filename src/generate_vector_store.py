@@ -9,14 +9,13 @@ from tqdm import tqdm
 from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from transformers import AutoTokenizer, AutoModel
 
 from src.loader.doc_textract_loader import DocTextractLoader
 from src.loader.ppt_text_loader import PPTXTextLoader
 
 VECTOR_STORE_PATH = "../vector_store"
 DATA_PATH = [
-    "/vector_repo",
+    "/vector_repo"
 ]
 EXCLUDE_DIRS = {"__pycache__", "target", "logs", "log", "node_modules", "lib", ".git", ".github", "build", "dist"}
 INCLUDE_FILES_SOURCES = [".py", ".java", ".vue", ".js", ".ts", ".tsx", ".cjs", ".mjs", ".json", ".ini", ".sh",
@@ -64,27 +63,6 @@ def load_documents(path_list: [str]):
     return documents
 
 
-# 批量生成向量（推荐批次大小根据显存调整）
-def generate_embeddings(texts, batch_size=48):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model_name = "intfloat/multilingual-e5-large"
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModel.from_pretrained(model_name).to(device)
-    model.eval()
-
-    embeddings = []
-    for i in tqdm(range(0, len(texts), batch_size)):
-        batch = texts[i:i + batch_size]
-        inputs = tokenizer(batch, padding=True, truncation=True, return_tensors="pt").to(device)
-        with torch.no_grad():
-            outputs = model(**inputs)
-            # 获取池化后的 CLS token 表示
-            cls_embeddings = outputs.last_hidden_state[:, 0, :]
-            cls_embeddings = torch.nn.functional.normalize(cls_embeddings, dim=-1)
-            embeddings.append(cls_embeddings.cpu())
-    return torch.cat(embeddings).numpy()
-
-
 def main():
     if os.path.exists(VECTOR_STORE_PATH):
         print(f"检测到向量库已存在于 {VECTOR_STORE_PATH}，无需重复生成")
@@ -102,12 +80,19 @@ def main():
     chunks = splitter.split_documents(documents)
     print(f"共切分为 {len(chunks)} 个文本块")
 
-    print("正在创建向量模型...")
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"正在使用 {device} 创建向量模型...")
+    embeddings = HuggingFaceEmbeddings(
+        model_name="intfloat/multilingual-e5-large",
+        model_kwargs={"device": device}
+    )
     texts = [doc.page_content for doc in chunks]
 
-    vectors = generate_embeddings(texts)
+    print("正在生成嵌入向量...")
+    with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+        vectors = list(tqdm(executor.map(embeddings.embed_query, texts), total=len(texts)))
     text_vector_pairs = list(zip(texts, vectors))
-    vectorstore = FAISS.from_embeddings(text_vector_pairs, embeddings=None)
+    vectorstore = FAISS.from_embeddings(text_vector_pairs, embeddings)
 
     # batch_size = 64
     # vectors = []
