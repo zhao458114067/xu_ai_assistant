@@ -13,6 +13,8 @@ pip install -r requirements.txt
 
 pip install textract python-magic-bin (linux安装python-magic)
 
+pip install onnxruntime-directml (amd 显卡)
+
 ## 4、生成向量知识库
 python generate_vector_store.py
 

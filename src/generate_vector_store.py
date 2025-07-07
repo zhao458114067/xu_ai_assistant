@@ -1,24 +1,24 @@
 import os
-from concurrent.futures import ThreadPoolExecutor
 
 import nltk
 import torch
 from dotenv import load_dotenv
-from langchain_community.document_loaders import TextLoader, Docx2txtLoader, PyPDFLoader
-from tqdm import tqdm
-from langchain_community.vectorstores import FAISS
-from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.document_loaders import TextLoader, Docx2txtLoader, PyPDFLoader
+from langchain_community.vectorstores import FAISS
+from tqdm import tqdm
 
+from src.embedding.onnx_embeddings import OnnxEmbeddings
 from src.loader.doc_textract_loader import DocTextractLoader
 from src.loader.ppt_text_loader import PPTXTextLoader
+from src.onnx_export import output_dir
 
 VECTOR_STORE_PATH = "/vector_store"
 DATA_PATH = [
     "/vector_repo"
 ]
 EXCLUDE_DIRS = {"__pycache__", "target", "logs", "log", "node_modules", "lib", ".git", ".github", "build", "dist"}
-INCLUDE_FILES_SOURCES = [".py", ".java", ".vue", ".js", ".ts", ".tsx", ".cjs", ".mjs", ".json", ".ini", ".sh",
+INCLUDE_FILES_SOURCES = [".py", ".java", ".vue", ".js", ".ts", ".tsx", ".cjs", ".mjs", ".json", ".sh",
                          "dockerfile", ".properties", ".doc", ".docx", ".pdf", ".ppt", ".pptx", ".vbs"]
 
 
@@ -73,37 +73,23 @@ def main():
 
     print("正在切分文本...")
     splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=150,
-        separators=["\n\n", "\n", ".", "。", "，", ",", " "]
+        chunk_size=800,
+        chunk_overlap=200,
+        separators=["\n\n", "\n", "。", ".", ";", "{", "}", "#", "//", " "]
     )
     chunks = splitter.split_documents(documents)
+    for chunk in chunks:
+        chunk.page_content = "passage: " + chunk.page_content
     print(f"共切分为 {len(chunks)} 个文本块")
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"正在使用 {device} 创建向量模型...")
-    embeddings = HuggingFaceEmbeddings(
-        model_name="intfloat/multilingual-e5-large",
-        model_kwargs={"device": device}
+    model_name = "intfloat/multilingual-e5-large"
+    embeddings = OnnxEmbeddings(
+        onnx_path=os.path.join(output_dir, model_name.replace("/", "_") + ".onnx"),
+        model_name=model_name
     )
-    texts = [doc.page_content for doc in chunks]
-
-    print("正在生成嵌入向量...")
-    with ThreadPoolExecutor(max_workers=os.cpu_count() * 2) as executor:
-        vectors = list(tqdm(executor.map(embeddings.embed_query, texts), total=len(texts)))
-    text_vector_pairs = list(zip(texts, vectors))
-    vectorstore = FAISS.from_embeddings(text_vector_pairs, embeddings)
-
-    # batch_size = 64
-    # vectors = []
-    #
-    # for i in tqdm(range(0, len(texts), batch_size), desc=f"Embedding with {device}"):
-    #     batch = texts[i:i + batch_size]
-    #     batch_vecs = embeddings.embed_documents(batch)
-    #     vectors.extend(batch_vecs)
-    #
-    # text_vector_pairs = list(zip(texts, vectors))
-    # vectorstore = FAISS.from_embeddings(text_vector_pairs, embeddings)
+    vectorstore = FAISS.from_documents(chunks, embeddings)
 
     print("正在保存向量数据库...")
     vectorstore.save_local(VECTOR_STORE_PATH)
