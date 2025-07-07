@@ -26,8 +26,8 @@ def start_assistant():
         search_type="mmr",
         search_kwargs={
             "k": 10,
-            "fetch_k": 50,
-            "lambda_mult": 0.5
+            "fetch_k": 20,
+            "lambda_mult": 0.9
         }
     )
 
@@ -41,7 +41,7 @@ def start_assistant():
         model="deepseek-chat",
         base_url="https://api.deepseek.com/v1",
         api_key=os.environ.get("API_KEY"),
-        temperature=0.4,
+        temperature=0.7,
         streaming=True  # 开启流式模式
     )
 
@@ -66,19 +66,17 @@ def question_and_answer(retriever, llm):
                 messages.append(HumanMessage(content=q))
                 messages.append(AIMessage(content=a))
 
-            # rewrite_prompt = (
-            #     f"你是一个LangChain向量库检索优化助手，请将下面这个用户问题翻译成英文并重写成更适合基于向量库检索的查询，优化前后不能改变语义：\n\n"
-            #     f"原始问题: {query}\n\n"
-            #     f"相关文档段落:\n{doc_contents}\n\n"
-            #     f"优化后的查询（不需要任何解释或前缀）："
-            # )
-            # rewrite_prompt = llm.invoke(messages + [HumanMessage(content=rewrite_prompt)]).content.strip()
-            #
-            # doc_contents = retrieve_contents(rewrite_prompt, retriever)
+            rewrite_prompt = (f"""请你基于上下文，把这个问题补充成更完整、更有助于langchain向量库检索的形式。注意：优化后的语句不需要任何解释或前缀。
+                              \n\n用户问题：{query}
+                                """)
+            rewrite_prompt = llm.invoke(messages + [HumanMessage(content=rewrite_prompt)]).content.strip()
+
+            doc_contents = retrieve_contents(rewrite_prompt, retriever)
 
             # 构造完整 Prompt
-            full_prompt = f"""\n\npassage: {doc_contents}       
-                                \n\nquery: {query}
+            full_prompt = f"""请根据以下文档回答问题。文档以中文为主，请勿编造。”。        
+            \n\n资料：{doc_contents}            
+            \n\n用户问题：{query}
             """
 
             messages.append(HumanMessage(content=full_prompt))
