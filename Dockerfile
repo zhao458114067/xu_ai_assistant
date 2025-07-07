@@ -16,4 +16,4 @@ COPY ./requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir textract python-magic
 
-CMD python /app/generate_vector_store.py
+CMD python /app/src/generate_vector_store.py
