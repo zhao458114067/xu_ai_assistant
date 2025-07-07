@@ -89,7 +89,7 @@ def main():
     texts = [doc.page_content for doc in chunks]
 
     print("正在生成嵌入向量...")
-    with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+    with ThreadPoolExecutor(max_workers=os.cpu_count() * 2) as executor:
         vectors = list(tqdm(executor.map(embeddings.embed_query, texts), total=len(texts)))
     text_vector_pairs = list(zip(texts, vectors))
     vectorstore = FAISS.from_embeddings(text_vector_pairs, embeddings)
