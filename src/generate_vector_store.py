@@ -13,7 +13,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from src.loader.doc_textract_loader import DocTextractLoader
 from src.loader.ppt_text_loader import PPTXTextLoader
 
-VECTOR_STORE_PATH = "../vector_store"
+VECTOR_STORE_PATH = "/vector_store"
 DATA_PATH = [
     "/vector_repo"
 ]
@@ -64,7 +64,7 @@ def load_documents(path_list: [str]):
 
 
 def main():
-    if os.path.exists(VECTOR_STORE_PATH):
+    if not os.listdir(VECTOR_STORE_PATH):
         print(f"检测到向量库已存在于 {VECTOR_STORE_PATH}，无需重复生成")
         return
 
