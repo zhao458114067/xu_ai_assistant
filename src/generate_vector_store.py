@@ -16,7 +16,7 @@ from src.loader.ppt_text_loader import PPTXTextLoader
 
 VECTOR_STORE_PATH = "../vector_store"
 DATA_PATH = [
-    "D:\\pycharm_workspace\\octopus_vector_repo",
+    "/vector_repo",
 ]
 EXCLUDE_DIRS = {"__pycache__", "target", "logs", "log", "node_modules", "lib", ".git", ".github", "build", "dist"}
 INCLUDE_FILES_SOURCES = [".py", ".java", ".vue", ".js", ".ts", ".tsx", ".cjs", ".mjs", ".json", ".ini", ".sh",
