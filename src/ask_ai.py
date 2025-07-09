@@ -1,47 +1,51 @@
 import os
 from dotenv import load_dotenv
+from langchain.retrievers import EnsembleRetriever
 from langchain_community.chat_models import ChatOpenAI
-from langchain.vectorstores import FAISS
-from langchain_core.messages import HumanMessage, AIMessage
-from langchain_huggingface import HuggingFaceEmbeddings
-from generate_vector_store import VECTOR_STORE_PATH
+from langchain_community.retrievers import BM25Retriever
+from langchain_community.vectorstores import FAISS
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from generate_vector_store import VECTOR_STORE_PATH, model_name, load_documents, DATA_PATH
 from src.embedding.onnx_embeddings import OnnxEmbeddings
 from src.onnx_export import output_dir
 
 
 def start_assistant():
     print("正在加载向量数据库...")
-    model_name = "intfloat/multilingual-e5-large"
     embeddings = OnnxEmbeddings(
         onnx_path=os.path.join(output_dir, model_name.replace("/", "_") + ".onnx"),
         model_name=model_name
     )
     vectorstore = FAISS.load_local(
-        VECTOR_STORE_PATH, embeddings,
+        VECTOR_STORE_PATH,
+        embeddings,
         allow_dangerous_deserialization=True
     )
 
     # 检索其
-    retriever = vectorstore.as_retriever(
+    vector_retriever = vectorstore.as_retriever(
         search_type="mmr",
         search_kwargs={
-            "k": 10,
-            "fetch_k": 20,
-            "lambda_mult": 0.9
+            "k": 15,
+            "fetch_k": 30,
+            "lambda_mult": 0.7
         }
     )
 
-    # retriever = vectorstore.as_retriever(
-    #     # search_type="similarity",
-    #     search_kwargs={"k": 10}
-    # )
+    documents = load_documents(DATA_PATH)
+    bm25_retriever = BM25Retriever.from_documents(documents)
+    bm25_retriever.k = 15
+    retriever = EnsembleRetriever(
+        retrievers=[bm25_retriever, vector_retriever],
+        weights=[0.7, 0.3]
+    )
 
     # 大模型
     llm = ChatOpenAI(
         model="deepseek-chat",
         base_url="https://api.deepseek.com/v1",
         api_key=os.environ.get("API_KEY"),
-        temperature=0.7,
+        temperature=0.3,
         streaming=True  # 开启流式模式
     )
 
@@ -52,6 +56,9 @@ def start_assistant():
 def question_and_answer(retriever, llm):
     history = []
 
+    rewrite_sys_message = SystemMessage(
+        content="请你将用户的问题提取出最有助于在代码或文档中进行检索的关键词列表。返回时只输出关键词，用空格隔开，不要解释或添加前缀。保留专业术语、函数名、变量名等关键词，不要转换为自然语言。")
+    ask_sys_message = SystemMessage(content="你是一个熟悉代码和技术文档的助手。请根据以下资料回答用户问题。")
     while True:
         try:
             query = input("你问：")
@@ -66,27 +73,33 @@ def question_and_answer(retriever, llm):
                 messages.append(HumanMessage(content=q))
                 messages.append(AIMessage(content=a))
 
-            rewrite_prompt = (f"""请你基于上下文，把这个问题补充成更完整、更有助于langchain向量库检索的形式。注意：优化后的语句不需要任何解释或前缀。
-                              \n\n用户问题：{query}
-                                """)
-            rewrite_prompt = llm.invoke(messages + [HumanMessage(content=rewrite_prompt)]).content.strip()
+            rewrite_prompt = f"""
+            【文档】\n
+            {doc_contents}\n
+
+            【用户问题】\n
+            {query}\n
+            """
+            print("拆解提问中...\n")
+            rewrite_prompt = get_llm_answer(llm,
+                                            [rewrite_sys_message] + messages + [HumanMessage(content=rewrite_prompt)])
 
             doc_contents = retrieve_contents(rewrite_prompt, retriever)
 
             # 构造完整 Prompt
-            full_prompt = f"""请根据以下文档回答问题。文档以中文为主，请勿编造。”。        
-            \n\n资料：{doc_contents}            
-            \n\n用户问题：{query}
+            full_prompt = f"""
+            【文档】\n
+            {doc_contents}\n
+
+            【用户问题】\n
+            {query}\n
             """
 
             messages.append(HumanMessage(content=full_prompt))
 
             # 输出答案（流式打印）
             print("回答：", end="", flush=True)
-            answer = ""
-            for chunk in llm.stream(messages):
-                print(chunk.content, end="", flush=True)
-                answer += chunk.content
+            answer = get_llm_answer(llm, [ask_sys_message] + messages)
             print("\n")
 
             # 存入历史
@@ -96,8 +109,17 @@ def question_and_answer(retriever, llm):
             break
 
 
+def get_llm_answer(llm, messages):
+    answer = ""
+    for chunk in llm.stream(messages):
+        print(chunk.content, end="", flush=True)
+        answer += chunk.content
+    print("\n")
+    return answer
+
+
 def retrieve_contents(query, retriever):
-    docs = retriever.invoke(f"query: {query.strip()}")
+    docs = retriever.invoke(query)
     context = "\n\n".join([doc.page_content for doc in docs])
     return context
 
