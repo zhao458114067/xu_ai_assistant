@@ -8,3 +8,5 @@ unstructured[local-inference,pdf,ppt,all-docs]
 rank_bm25
 tree_sitter
 tree_sitter_languages
+flask-socketio
+eventlet
