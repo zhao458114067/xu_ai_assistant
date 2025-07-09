@@ -37,7 +37,7 @@ class AIAssistantService:
         vector_retriever = vectorstore.as_retriever(
             search_type="mmr",
             search_kwargs={
-                "k": 15,
+                "k": 10,
                 "fetch_k": 30,
                 "lambda_mult": 0.7
             }
@@ -45,7 +45,7 @@ class AIAssistantService:
 
         documents = load_documents(DATA_PATH)
         bm25_retriever = BM25Retriever.from_documents(documents)
-        bm25_retriever.k = 15
+        bm25_retriever.k = 10
         self.retriever = EnsembleRetriever(
             retrievers=[bm25_retriever, vector_retriever],
             weights=[0.7, 0.3]
@@ -128,8 +128,10 @@ class AIAssistantService:
         await websocket.send("回答提问中...\n")
         answer = ""
         async for chunk in self.llm.astream([self.ask_sys_message] + messages + [HumanMessage(content=full_prompt)]):
-            answer += chunk.content
-            await callback_handler.on_llm_new_token(chunk.content)
+            chunk_content = chunk.content
+            if chunk_content:
+                answer += chunk_content
+                await callback_handler.on_llm_new_token(chunk_content)
 
         # 存入用户历史
         user_session['history'].append((query, answer))

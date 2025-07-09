@@ -17,12 +17,12 @@ async def websocket_handler(websocket):
     print(f"连接已建立，SID: {sid}")
 
     try:
-        while True:
+        for i in range(100):
             message = await websocket.recv()
             print(f"收到来自 {sid} 的消息: {message}")
 
             user_session = ai_assistant.get_user_session(sid)
-            # 中断请求
+            # # 中断请求
             if message.strip().lower() in ["stop", "cancel"]:
                 if user_session["task"] and not user_session["task"].done():
                     user_session["task"].cancel()
@@ -43,8 +43,7 @@ async def websocket_handler(websocket):
             user_session["active"] = True
 
             def unlock_session(task_result):
-                if sid in user_session:
-                    user_session["active"] = False
+                user_session["active"] = False
 
             task.add_done_callback(unlock_session)
 
@@ -52,10 +51,9 @@ async def websocket_handler(websocket):
         print(f"WebSocket错误 ({sid}): {e}")
     finally:
         user_session = ai_assistant.get_user_session(sid)
-        if sid in user_session:
-            task = user_session["task"]
-            if task and not task.done():
-                task.cancel()
+        task = user_session["task"]
+        if task and not task.done():
+            task.cancel()
         print(f"连接断开，SID: {sid}")
 
 
@@ -72,8 +70,8 @@ async def main():
     async with websockets.serve(websocket_handler,
                                 "0.0.0.0",
                                 19001,
-                                ping_interval=20,
-                                ping_timeout=10):
+                                ping_interval=60,
+                                ping_timeout=30):
         print("""
         AI助手服务已启动:
         HTTP server running at http://0.0.0.0:19000
