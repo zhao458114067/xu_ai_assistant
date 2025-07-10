@@ -53,8 +53,8 @@ class AIAssistantService:
 
         # 初始化大模型
         self.llm = ChatOpenAI(
-            model="deepseek-chat",
-            base_url="https://api.deepseek.com/v1",
+            model=os.environ.get("MODEL"),
+            base_url=os.environ.get("BASE_URL"),
             api_key=os.environ.get("API_KEY"),
             temperature=0.3,
             streaming=True
