@@ -87,7 +87,7 @@ class AIAssistantService:
 
         # 构造历史对话,最多保留最近5轮
         messages = []
-        for q, a in user_session['history'][-5:]:
+        for q, a in user_session['history'][-10:]:
             messages.append(HumanMessage(content=q))
             messages.append(AIMessage(content=a))
 
@@ -104,7 +104,7 @@ class AIAssistantService:
 
         # 重写问题
         print("\n理解提问中...\n")
-        await websocket.send("理解提问中...\n")
+        # await websocket.send("理解提问中...\n")
 
         rewrite_answer = ""
         async for chunk in self.llm.astream(
@@ -125,7 +125,7 @@ class AIAssistantService:
                     """
 
         print("\n\n回答提问中...\n")
-        await websocket.send("回答提问中...\n")
+        # await websocket.send("回答提问中...\n")
         answer = ""
         async for chunk in self.llm.astream([self.ask_sys_message] + messages + [HumanMessage(content=full_prompt)]):
             chunk_content = chunk.content
@@ -135,4 +135,5 @@ class AIAssistantService:
 
         # 存入用户历史
         user_session['history'].append((query, answer))
+        await websocket.send("[DONE]")
         return answer
