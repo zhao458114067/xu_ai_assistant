@@ -5,5 +5,4 @@ langchain-community
 rank_bm25
 websockets
 onnxruntime
-torch
 transformers

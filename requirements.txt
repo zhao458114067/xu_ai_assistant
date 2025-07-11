@@ -3,9 +3,9 @@ langchain-openai
 langchain-community
 langchain-huggingface
 unstructured[local-inference,pdf,ppt,all-docs]
-rank_bm25
 tree_sitter
 tree_sitter_languages
+rank_bm25
 websockets
 onnxruntime
 optimum[onnxruntime]
