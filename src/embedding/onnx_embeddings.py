@@ -8,23 +8,28 @@ import onnxruntime as ort
 from transformers import AutoTokenizer, AutoModel
 from langchain_core.embeddings import Embeddings
 
+from build.xu_ai_assistant.src.onnx_export import onnx_path
+from src.onnx_export import output_dir
+
 
 class OnnxEmbeddings(Embeddings):
-    def __init__(self, onnx_path, model_name, device_type="auto"):
+    def __init__(self, model_name, device_type="auto"):
         """
         :param onnx_path: ONNX 文件路径或目录
         :param model_name: HF 模型名称
         :param device_type: auto / cuda / cpu / amd
         """
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         self.use_onnx = os.path.exists(onnx_path)
 
         if self.use_onnx:
             self.session = self._init_onnx_session(onnx_path, device_type)
             self.output_name = self.session.get_outputs()[0].name
+            self.tokenizer = AutoTokenizer.from_pretrained(output_dir, trust_remote_code=True)
+
         else:
             warnings.warn("未找到 ONNX 模型，将使用 Hugging Face PyTorch 模型，推理速度较慢")
             self.model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
+            self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
             self.model.eval()
             self.device = torch.device("cuda" if  torch.cuda.is_available() else "cpu")
             self.model.to(self.device)
