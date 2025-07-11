@@ -1,4 +1,5 @@
 import os
+import pickle
 from typing import Dict, Any
 
 from dotenv import load_dotenv
@@ -8,10 +9,9 @@ from langchain_community.vectorstores import FAISS
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 
+from src.constants.constants import VECTOR_STORE_PATH, RETRIEVER_PATH, DATA_PATH, model_name
 from src.embedding.onnx_embeddings import OnnxEmbeddings
-from src.generate_vector_store import VECTOR_STORE_PATH, load_documents, DATA_PATH
 from src.handler.websocket_call_back_handler import WebSocketCallbackHandler
-from src.onnx_export import output_dir, model_name
 
 
 class AIAssistantService:
@@ -42,9 +42,18 @@ class AIAssistantService:
             }
         )
 
-        documents = load_documents(DATA_PATH)
-        bm25_retriever = BM25Retriever.from_documents(documents)
-        bm25_retriever.k = 10
+        bm25_retriever_path = RETRIEVER_PATH + "/bm25_retriever.pkl"
+        if os.path.exists(bm25_retriever_path):
+            with open(bm25_retriever_path, "rb") as f:
+                bm25_retriever = pickle.load(f)
+        else:
+            from src.generate_vector_store import load_documents
+            documents = load_documents(DATA_PATH)
+            bm25_retriever = BM25Retriever.from_documents(documents)
+            bm25_retriever.k = 10
+            with open(bm25_retriever_path, "wb") as f:
+                pickle.dump(bm25_retriever, f)
+
         self.retriever = EnsembleRetriever(
             retrievers=[bm25_retriever, vector_retriever],
             weights=[0.7, 0.3]

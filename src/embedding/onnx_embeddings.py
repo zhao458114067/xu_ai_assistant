@@ -2,14 +2,12 @@ import os
 import warnings
 import torch
 import torch.nn.functional as F
-import numpy as np
 from tqdm import tqdm
 import onnxruntime as ort
 from transformers import AutoTokenizer, AutoModel
 from langchain_core.embeddings import Embeddings
 
-from build.xu_ai_assistant.src.onnx_export import onnx_path
-from src.onnx_export import output_dir
+from src.constants.constants import onnx_path, output_dir
 
 
 class OnnxEmbeddings(Embeddings):
@@ -31,7 +29,7 @@ class OnnxEmbeddings(Embeddings):
             self.model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
             self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
             self.model.eval()
-            self.device = torch.device("cuda" if  torch.cuda.is_available() else "cpu")
+            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             self.model.to(self.device)
 
     def _init_onnx_session(self, onnx_path, device_type):
@@ -66,7 +64,8 @@ class OnnxEmbeddings(Embeddings):
 
     def _embed(self, text):
         text = text.strip().replace("\n", " ")
-        tokens = self.tokenizer(text, return_tensors="pt" if not self.use_onnx else "np", padding="max_length", truncation=True, max_length=512)
+        tokens = self.tokenizer(text, return_tensors="pt" if not self.use_onnx else "np", padding="max_length",
+                                truncation=True, max_length=512)
 
         if self.use_onnx:
             # position_ids = np.arange(tokens["input_ids"].shape[1])[None, :].astype("int64")

@@ -1,15 +1,7 @@
 from optimum.exporters.onnx import main_export
 from transformers import AutoModel, AutoTokenizer
 import os
-import shutil
-
-# 配置输出目录
-model_name = "BAAI/bge-m3"
-output_dir = "/onnx_models/" + model_name
-onnx_model_name = model_name.replace("/", "_") + ".onnx"
-onnx_path = f"{output_dir}/{onnx_model_name}"
-
-os.makedirs(output_dir, exist_ok=True)
+from src.constants.constants import model_name, output_dir, onnx_model_name
 
 if __name__ == '__main__':
     # 保存 tokenizer

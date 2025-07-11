@@ -11,9 +11,9 @@
 ## 3、安装依赖（py3.11）：
 pip install -r requirements.txt
 
-pip install textract python-magic-bin (linux安装python-magic)
+windows额外: pip install textract python-magic-bin onnxruntime-directml
 
-amd 显卡需要额外装：pip install optimum[onnxruntime] onnxruntime-directml
+linux额外: pip install textract python-magic
 
 ## 4、生成向量知识库
 python generate_vector_store.py

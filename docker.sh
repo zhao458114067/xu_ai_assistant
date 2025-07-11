@@ -12,6 +12,6 @@ mkdir -p /var/py_workspace && cd /var/py_workspace
 
 git clone https://github.com/zhao458114067/xu_ai_assistant.git && cd xu_ai_assistant
 
-docker build -t xu_ai_assistant .
+docker build -t xu_ai_assistant -f Dockerfile_GenerateVector .
 
 docker run -it -d -v /vector_repo:/vector_repo -v /vector_store:/vector_store -v /var/py_workspace/xu_ai_assistant:/app --network host --gpus all xu_ai_assistant

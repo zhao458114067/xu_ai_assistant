@@ -10,22 +10,13 @@ from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 from tqdm import tqdm
 
+from src.constants.constants import common_dir, model_name, EXCLUDE_DIRS, INCLUDE_FILES_SOURCES, DATA_PATH, \
+    VECTOR_STORE_PATH
 from src.embedding.onnx_embeddings import OnnxEmbeddings
 from src.loader.doc_textract_loader import DocTextractLoader
 from src.loader.ppt_text_loader import PPTXTextLoader
 from src.loader.tree_sitter_splitter import split_code_with_tree_sitter, LANGUAGE_MAPPING
-from src.onnx_export import output_dir, onnx_model_name, model_name
 
-VECTOR_STORE_PATH = "/vector_store"
-os.makedirs(VECTOR_STORE_PATH, exist_ok=True)
-
-DATA_PATH = [
-    "/vector_repo"
-]
-EXCLUDE_DIRS = {"__pycache__", "target", "logs", "log", "node_modules", "lib", ".git", ".github", "build", "dist",
-                "resources", "test"}
-INCLUDE_FILES_SOURCES = [".py", ".java", ".vue", ".js", ".ts", ".tsx", ".cjs", ".mjs", ".json", ".sh",
-                         "dockerfile", ".properties", ".doc", ".docx", ".pdf", ".ppt", ".pptx", ".vbs"]
 
 
 def get_loader(filepath: str):
@@ -77,7 +68,6 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"正在使用 {device} 创建向量模型...")
     embeddings = OnnxEmbeddings(
-        onnx_path=os.path.join(output_dir, onnx_model_name),
         model_name=model_name
     )
 
