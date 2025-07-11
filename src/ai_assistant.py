@@ -24,7 +24,6 @@ class AIAssistantService:
         # 初始化向量数据库和检索器
         print("正在加载向量数据库...")
         embeddings = OnnxEmbeddings(
-            onnx_path=os.path.join(output_dir, model_name.replace("/", "_") + ".onnx"),
             model_name=model_name
         )
         vectorstore = FAISS.load_local(
