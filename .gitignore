@@ -35,3 +35,5 @@ build/
 .env
 /vector_store
 /onnx_models
+/ssh_key
+/rootfs
