@@ -17,8 +17,7 @@ RUN rm -rf /etc/apt/sources.list.d/* \
 COPY ./requirements_server.txt ./requirements.txt
 
 RUN python -m pip config set global.index-url https://mirrors.huaweicloud.com/repository/pypi/simple \
-    && pip install --no-cache-dir -r /app/requirements.txt \
-    && pip install --no-cache-dir textract python-magic \
+    && pip install --no-cache-dir -r ./requirements.txt \
     && python -m pip cache purge
 
 # 设置环境变量
