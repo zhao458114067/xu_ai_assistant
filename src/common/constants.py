@@ -15,9 +15,7 @@ os.makedirs(VECTOR_STORE_PATH, exist_ok=True)
 RETRIEVER_PATH = common_dir + "/retriever"
 os.makedirs(RETRIEVER_PATH, exist_ok=True)
 
-DATA_PATH = [
-    common_dir + "/vector_repo"
-]
+DATA_PATH = common_dir + "/vector_repo"
 
 # 向量仓库过滤
 EXCLUDE_DIRS = {"__pycache__", "target", "logs", "log", "node_modules", "lib", ".git", ".github", "build", "dist",

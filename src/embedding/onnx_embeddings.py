@@ -6,11 +6,12 @@ import onnxruntime as ort
 from transformers import AutoTokenizer, AutoModel
 from langchain_core.embeddings import Embeddings
 
-from src.constants.constants import onnx_path, output_dir
+from src.common.constants import onnx_path, output_dir
 
 
 class OnnxEmbeddings(Embeddings):
-    def __init__(self, model_name, device_type="auto"):
+    def __init__(self, model_name, batch_size=1, device_type="auto"):
+        self.batch_size = batch_size
         self.use_onnx = os.path.exists(onnx_path)
 
         if self.use_onnx:
@@ -52,16 +53,19 @@ class OnnxEmbeddings(Embeddings):
         return [p for p in priority if p in available]
 
     def embed_documents(self, texts):
-        return [self._embed(text) for text in tqdm(texts, desc="生成嵌入向量")]
+        embeddings = []
+        for i in tqdm(range(0, len(texts), self.batch_size), desc="生成嵌入向量"):
+            batch_texts = texts[i:i + self.batch_size]
+            batch_embeddings = self._embed_batch(batch_texts)
+            embeddings.extend(batch_embeddings)
+        return embeddings
 
-    def embed_query(self, text):
-        return self._embed(text)
-
-    def _embed(self, text):
-        text = text.strip().replace("\n", " ")
-        tokens = self.tokenizer(text, return_tensors="np", padding="max_length",
-                                truncation=True, max_length=512)
-
+    def _embed_batch(self, texts):
+        # 预处理所有文本
+        tokens = self.tokenizer(texts, return_tensors="np",
+                                padding="max_length",
+                                truncation=True,
+                                max_length=512)
         ort_inputs = {
             "input_ids": tokens["input_ids"],
             "attention_mask": tokens["attention_mask"],
@@ -70,4 +74,11 @@ class OnnxEmbeddings(Embeddings):
         cls_embedding = outputs[:, 0, :]  # [batch, hidden]
         norm = np.linalg.norm(cls_embedding, axis=1, keepdims=True)
         normed = cls_embedding / (norm + 1e-10)
-        return normed[0].tolist()
+        return normed.tolist()
+
+    def embed_query(self, text):
+        return self._embed(text)
+
+    def _embed(self, text):
+        embeddings = self._embed_batch([text])
+        return embeddings[0]

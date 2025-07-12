@@ -1,7 +1,7 @@
 from optimum.exporters.onnx import main_export
 from transformers import AutoModel, AutoTokenizer
 import os
-from src.constants.constants import model_name, output_dir, onnx_model_name
+from src.common.constants import model_name, output_dir, onnx_model_name
 
 if __name__ == '__main__':
     # 保存 tokenizer

@@ -4,7 +4,7 @@ langchain-openai
 langchain-community
 langchain-huggingface
 unstructured[local-inference,pdf,ppt,all-docs]
-tree_sitter
+tree_sitter<0.22
 tree_sitter_languages
 rank_bm25
 websockets

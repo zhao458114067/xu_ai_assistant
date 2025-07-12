@@ -9,7 +9,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 
-from src.constants.constants import VECTOR_STORE_PATH, RETRIEVER_PATH, DATA_PATH, model_name
+from src.common.constants import VECTOR_STORE_PATH, RETRIEVER_PATH, DATA_PATH, model_name
 from src.embedding.onnx_embeddings import OnnxEmbeddings
 from src.handler.websocket_call_back_handler import WebSocketCallbackHandler
 
@@ -49,8 +49,8 @@ class AIAssistantService:
             with open(bm25_retriever_path, "rb") as f:
                 self.bm25_retriever = pickle.load(f)
         else:
-            from src.generate_vector_store import load_documents
-            documents = load_documents(DATA_PATH)
+            from src.loader.document_loader import load_all_documents
+            documents = load_all_documents(DATA_PATH)
             bm25_retriever = BM25Retriever.from_documents(documents)
             bm25_retriever.k = 10
             with open(bm25_retriever_path, "wb") as f:
