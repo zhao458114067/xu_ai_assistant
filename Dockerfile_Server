@@ -30,4 +30,5 @@ COPY ./build /ai_assistant
 COPY ./src ./src
 COPY ./app.py ./app.py
 
-CMD python /app/app.py
+ENTRYPOINT ["python", "/app/app.py"]
+
