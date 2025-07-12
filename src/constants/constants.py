@@ -24,3 +24,6 @@ EXCLUDE_DIRS = {"__pycache__", "target", "logs", "log", "node_modules", "lib", "
                 "resources", "test"}
 INCLUDE_FILES_SOURCES = [".py", ".java", ".vue", ".js", ".ts", ".tsx", ".cjs", ".mjs", ".json", ".sh",
                          "dockerfile", ".properties", ".doc", ".docx", ".pdf", ".ppt", ".pptx", ".vbs"]
+
+# OMP冲突
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
