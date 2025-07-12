@@ -32,20 +32,22 @@ class AIAssistantService:
             allow_dangerous_deserialization=True
         )
 
-        # 初始化检索器
-        vector_retriever = vectorstore.as_retriever(
+        # 检索其
+        # 第一次用语义检索，使用mmr
+        self.mmr_retriever = vectorstore.as_retriever(
             search_type="mmr",
             search_kwargs={
                 "k": 10,
                 "fetch_k": 30,
-                "lambda_mult": 0.7
+                "lambda_mult": 0.4
             }
         )
 
+        # 第二次用关键词+mmr混合检索，关键词检索器权重调高
         bm25_retriever_path = RETRIEVER_PATH + "/bm25_retriever.pkl"
         if os.path.exists(bm25_retriever_path):
             with open(bm25_retriever_path, "rb") as f:
-                bm25_retriever = pickle.load(f)
+                self.bm25_retriever = pickle.load(f)
         else:
             from src.generate_vector_store import load_documents
             documents = load_documents(DATA_PATH)
@@ -54,8 +56,8 @@ class AIAssistantService:
             with open(bm25_retriever_path, "wb") as f:
                 pickle.dump(bm25_retriever, f)
 
-        self.retriever = EnsembleRetriever(
-            retrievers=[bm25_retriever, vector_retriever],
+        self.mix_retriever = EnsembleRetriever(
+            retrievers=[self.bm25_retriever, self.mmr_retriever],
             weights=[0.7, 0.3]
         )
 
@@ -63,17 +65,17 @@ class AIAssistantService:
         self.llm = ChatOpenAI(
             model=os.environ.get("MODEL"),
             base_url=os.environ.get("BASE_URL"),
-            api_key=os.environ.get("API_KEY"),
             temperature=0.3,
             streaming=True
         )
 
         self.rewrite_sys_message = SystemMessage(
             content="请你将用户的问题提取出最有助于在代码或文档向量库中进行检索的关键词列表。返回时只输出关键词，用空格隔开，不要解释或添加前缀。保留专业术语、函数名、变量名等关键词，不要转换为自然语言。")
-        self.ask_sys_message = SystemMessage(content="你是一个熟悉代码和技术文档的助手。请根据以下资料回答用户问题。")
 
-    async def retrieve_contents(self, query):
-        docs = self.retriever.invoke(query)
+        self.ask_sys_message = SystemMessage(content="你是一个熟悉octopus系统代码与相关文档的超级智能助手，请根据相关资料解决用户提出来的问题。")
+
+    async def retrieve_contents(self, retriever, query):
+        docs = retriever.invoke(query)
         context = "\n\n".join([doc.page_content for doc in docs])
         return context
 
@@ -91,11 +93,11 @@ class AIAssistantService:
         user_session = self.get_user_session(user_id)
 
         # 第一次检索
-        doc_contents = await self.retrieve_contents(query)
+        doc_contents = await self.retrieve_contents(self.mix_retriever, query)
 
         # 构造历史对话,最多保留最近5轮
         messages = []
-        for q, a in user_session['history'][-10:]:
+        for q, a in user_session['history'][-5:]:
             messages.append(HumanMessage(content=q))
             messages.append(AIMessage(content=a))
 
@@ -108,8 +110,6 @@ class AIAssistantService:
         {query}\n
         """
 
-        callback_handler = WebSocketCallbackHandler(websocket)
-
         # 重写问题
         print("\n理解提问中...\n")
         # await websocket.send("理解提问中...\n")
@@ -121,7 +121,7 @@ class AIAssistantService:
             rewrite_answer += chunk.content
 
         # 用提取的关键词再检索一次
-        doc_contents = await self.retrieve_contents(rewrite_answer)
+        doc_contents = await self.retrieve_contents(self.mix_retriever, query + "\n" + rewrite_answer)
 
         # 构造完整Prompt
         full_prompt = f"""
@@ -133,7 +133,7 @@ class AIAssistantService:
                     """
 
         print("\n\n回答提问中...\n")
-        # await websocket.send("回答提问中...\n")
+        callback_handler = WebSocketCallbackHandler(websocket)
         answer = ""
         async for chunk in self.llm.astream([self.ask_sys_message] + messages + [HumanMessage(content=full_prompt)]):
             chunk_content = chunk.content

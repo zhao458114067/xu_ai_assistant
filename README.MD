@@ -1,4 +1,4 @@
-# 通用本地知识库问答系统（RAG）+ DeepSeek LLM 的流式输出助手
+# 兼容AMD显卡实现的通用本地知识库问答系统（RAG）的流式输出助手
 
 # 使用流程
 
@@ -19,4 +19,4 @@ linux额外: pip install textract python-magic
 python generate_vector_store.py
 
 ## 5、启动问答助手
-python ask_ai.py
+python app.py
